@@ -1,0 +1,23 @@
+# Configuração oficial do experimento. Todos os cenários rodam com estes mesmos parâmetros.
+saida: results               # diretório raiz dos resultados
+
+alvo:                        # requisição enviada pelo vegeta
+  url: http://localhost:8080/   # troque pela rota da app (porta do host no redirecionamento do VirtualBox)
+  method: GET
+  # body: '{"x": 1}'         # opcional; enviado com Content-Type: application/json
+
+carga:
+  taxas: [10, 25, 50, 100, 200, 400]   # req/s, iguais para todos os cenários
+  duracao: 30s               # medição de cada execução
+  aquecimento: 5s            # descartado; 0s pula o aquecimento
+  repeticoes: 3
+  timeout: 10s               # por requisição
+  pausa: 5s                  # entre execuções
+
+vm:                          # de onde ler nproc/memória/vmstat
+  ssh: osboxes@localhost     # "local" = esta máquina (sem SSH)
+  porta: 2222
+
+qualidade:                   # critério de "aguentou" para capacidade/degradação
+  p95_max_ms: 500
+  sucesso_min: 0.99
