@@ -1,5 +1,9 @@
-"""Métricas de dentro da VM: nproc/memória total e amostras do vmstat (via SSH ou local)."""
+"""Métricas de dentro da VM: nproc/memória total, amostras do vmstat (via SSH ou local)
+e heap/fora do heap da JVM (via /actuator/prometheus da app)."""
 import subprocess
+import threading
+import time
+import urllib.request
 
 
 def destino(cfg_vm):
@@ -7,10 +11,14 @@ def destino(cfg_vm):
 
     `ssh: local` executa na própria máquina (teste ponta a ponta e apps rodando localmente).
     BatchMode=yes faz o ssh falhar em vez de ficar esperando senha.
+    ControlMaster reaproveita uma única conexão: abrir uma sessão nova (handshake, PAM, sessão do
+    systemd) satura uma VM de 1 CPU por ~1 s bem no início da medição e infla o p95.
     """
     if cfg_vm["ssh"] == "local":
         return ["sh", "-c"]
-    return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-p", str(cfg_vm["porta"]), cfg_vm["ssh"]]
+    return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
+            "-o", "ControlMaster=auto", "-o", "ControlPath=~/.ssh/bench-%C", "-o", "ControlPersist=10m",
+            "-p", str(cfg_vm["porta"]), cfg_vm["ssh"]]
 
 
 def info(destino):
@@ -43,6 +51,49 @@ class Coletor:
         if self.proc.poll() is None:
             self.proc.kill()
             self.proc.wait()
+
+
+class ColetorJvm:
+    """Lê `jvm_memory_used_bytes` do endpoint Prometheus da app a cada segundo, numa thread.
+
+    O endpoint passa pela mesma porta da carga: com a app saturada a leitura pode falhar ou
+    estourar o timeout; a amostra fica vazia e a coleta segue.
+    """
+
+    def __init__(self, url):
+        self.url = url
+        self.linhas = ["segundo,heap_mb,nonheap_mb"]
+        self._parar = threading.Event()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def _loop(self):
+        inicio = time.monotonic()
+        while not self._parar.is_set():
+            t = time.monotonic() - inicio
+            try:
+                with urllib.request.urlopen(self.url, timeout=1) as r:
+                    areas = parse_jvm(r.read().decode())
+                self.linhas.append(f"{t:.1f},{areas['heap']:.1f},{areas['nonheap']:.1f}")
+            except Exception:
+                self.linhas.append(f"{t:.1f},,")
+            self._parar.wait(max(0.0, 1 - (time.monotonic() - inicio - t)))
+
+    def parar(self):
+        self._parar.set()
+        self._thread.join()
+        return "\n".join(self.linhas) + "\n"
+
+
+def parse_jvm(texto):
+    """Soma `jvm_memory_used_bytes` por área (heap / nonheap), em MiB."""
+    areas = {"heap": 0.0, "nonheap": 0.0}
+    for linha in texto.splitlines():
+        if linha.startswith("jvm_memory_used_bytes{"):
+            for area in areas:
+                if f'area="{area}"' in linha:
+                    areas[area] += float(linha.rsplit(" ", 1)[1]) / 2**20
+    return areas
 
 
 def parse(texto, mem_total_mb):

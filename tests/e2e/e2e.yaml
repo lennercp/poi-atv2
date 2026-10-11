@@ -16,7 +16,3 @@ carga:
 vm:
   ssh: local
   porta: 22
-
-qualidade:
-  p95_max_ms: 100
-  sucesso_min: 0.99

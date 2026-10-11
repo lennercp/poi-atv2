@@ -7,6 +7,7 @@ import argparse
 import base64
 import json
 import math
+import mimetypes
 import os
 import re
 import subprocess
@@ -43,12 +44,33 @@ def carregar_config(caminho):
     return cfg
 
 
+def corpo_multipart(multipart):
+    """Monta um corpo multipart/form-data a partir de `campos` (texto) e `arquivos` (caminhos)."""
+    fronteira = "----bench-fronteira"
+    partes = []
+    for nome, valor in (multipart.get("campos") or {}).items():
+        partes.append(f'--{fronteira}\r\nContent-Disposition: form-data; name="{nome}"\r\n\r\n{valor}\r\n'.encode())
+    for nome, caminho in (multipart.get("arquivos") or {}).items():
+        tipo = mimetypes.guess_type(caminho)[0] or "application/octet-stream"
+        partes.append(f'--{fronteira}\r\nContent-Disposition: form-data; name="{nome}"; '
+                      f'filename="{Path(caminho).name}"\r\nContent-Type: {tipo}\r\n\r\n'.encode()
+                      + Path(caminho).read_bytes() + b"\r\n")
+    partes.append(f"--{fronteira}--\r\n".encode())
+    return b"".join(partes), f"multipart/form-data; boundary={fronteira}"
+
+
 def escrever_alvo(alvo, arquivo):
     """Grava o alvo no formato de alvos JSON do vegeta (-format=json)."""
     target = {"method": alvo.get("method", "GET"), "url": alvo["url"]}
+    if alvo.get("body") is not None and alvo.get("multipart") is not None:
+        raise ValueError("alvo: use body ou multipart, não os dois")
     if alvo.get("body") is not None:
         target["body"] = base64.b64encode(str(alvo["body"]).encode()).decode()
         target["header"] = {"Content-Type": ["application/json"]}
+    if alvo.get("multipart") is not None:
+        corpo, tipo = corpo_multipart(alvo["multipart"])
+        target["body"] = base64.b64encode(corpo).decode()
+        target["header"] = {"Content-Type": [tipo]}
     Path(arquivo).write_text(json.dumps(target) + "\n")
 
 
@@ -94,13 +116,18 @@ def cmd_run(args):
             if aquecimento > 0:
                 atacar(alvo, taxa, carga["aquecimento"], carga["timeout"], os.devnull)
             coletor = vm.Coletor(destino, amostras) if destino else None
+            jvm = vm.ColetorJvm(cfg["prometheus"]) if cfg.get("prometheus") else None
             try:
                 atacar(alvo, taxa, carga["duracao"], carga["timeout"], pasta / f"{nome}.bin")
+                if jvm:
+                    (pasta / f"{nome}.jvm.csv").write_text(jvm.parar())
                 if coletor:
                     (pasta / f"{nome}.vmstat.txt").write_text(coletor.esperar())
             finally:
                 if coletor:
                     coletor.parar()  # Ctrl+C: não deixa vmstat/ssh órfão
+                if jvm:
+                    jvm.parar()
             r = gerar_relatorios(pasta, nome, f"{args.cenario} — {taxa} req/s (rep {rep})")
             print(f"[{args.cenario}] {taxa:>5} req/s  rep {rep}/{carga['repeticoes']}  "
                   f"p95 = {r['latencies']['95th'] / 1e6:8.1f} ms  sucesso = {r['success'] * 100:5.1f}%",
