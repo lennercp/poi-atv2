@@ -39,21 +39,3 @@ Saída em `results/report/`: `resumo.csv`, `tabela.md` e os gráficos `vazao.png
 `latencia_p95.png`, `cpu.png`, `memoria.png`, `erros.png` e `memoria_detalhada.png` (um painel por cenário: heap + fora do heap empilhados e a
 memória usada da VM). Cada execução também tem um
 `results/<cenario>/r<taxa>_rep<n>.plot.html` (latência ao longo do tempo, gerado pelo `vegeta plot`).
-
-### Variações
-
-- **Rodada exploratória** (para escolher as taxas): copie para `explorar.yaml` com `saida: results-explorar` e
-  `duracao: 10s`, e passe `--config explorar.yaml` no `run` e no `report`.
-- **Sem aquecimento**: `sem-aquecimento.yaml` com `aquecimento: 0s` e `saida: results-sem-aquecimento`; reinicie a
-  app antes de rodar. O efeito aparece no `plot.html` da primeira execução e em p99/max.
-- **Apps locais (fora da VM)**: aponte `alvo.url` para a app local e use `--no-vm-metrics`, ou `vm.ssh: local`
-  para medir a CPU/memória da própria máquina.
-
-## Teste do harness
-
-```bash
-bash tests/e2e/run_e2e.sh
-```
-
-Sobe um servidor falso que gasta CPU, limitado a 1 e depois a 2 núcleos, roda os dois "cenários" e confere se o
-de 2 núcleos atende mais requisições na taxa mais alta.
