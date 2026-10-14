@@ -14,7 +14,7 @@ import vm  # noqa: E402
 
 ARQ_EXECUCAO = re.compile(r"r(\d+)_rep(\d+)\.json")
 NS_PARA_MS = 1e-6
-METRICAS_VM = ["cpu_pct", "us", "sy", "wa", "st", "mem_usada_mb"]
+METRICAS_VM = ["cpu_pct", "us", "sy", "wa", "st", "mem_usada_mb", "bi", "bo"]
 
 # Paleta categórica validada, em ordem fixa: a cor (e o marcador) acompanha o cenário em todos os gráficos.
 CORES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
@@ -97,13 +97,14 @@ def _fmt(linha, coluna, escala=1, casas=1):
 def escrever_tabela(resumo, arquivo):
     linhas = [
         "| Cenário | Taxa (req/s) | Vazão (req/s) | p50 (ms) | p90 (ms) | p95 (ms) | p99 (ms) | Sucesso (%) "
-        "| CPU (%) | Memória (MB) | Heap (MB) | Fora do heap (MB) |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| CPU (%) | I/O wait (%) | Escrita no disco (KiB/s) | Memória (MB) | Heap (MB) | Fora do heap (MB) |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for _, l in resumo.iterrows():
         linhas.append(f"| {l['cenario']} | {l['taxa']} | {_fmt(l, 'vazao')} | {_fmt(l, 'lat_p50_ms')} | "
                       f"{_fmt(l, 'lat_p90_ms')} | {_fmt(l, 'lat_p95_ms')} | {_fmt(l, 'lat_p99_ms')} | "
-                      f"{_fmt(l, 'sucesso', 100)} | {_fmt(l, 'cpu_pct', casas=0)} | {_fmt(l, 'mem_usada_mb', casas=0)} | "
+                      f"{_fmt(l, 'sucesso', 100)} | {_fmt(l, 'cpu_pct', casas=0)} | {_fmt(l, 'wa', casas=0)} | "
+                      f"{_fmt(l, 'bo', casas=0)} | {_fmt(l, 'mem_usada_mb', casas=0)} | "
                       f"{_fmt(l, 'heap_mb', casas=0)} | {_fmt(l, 'nonheap_mb', casas=0)} |")
     Path(arquivo).write_text("\n".join(linhas) + "\n")
 
@@ -177,6 +178,16 @@ def desenhar_graficos(resumo, metas, destino):
         ax.plot([], [], linestyle="--", linewidth=1, color=REFERENCIA, label="RAM provisionada (cor do cenário)")
         ax.set_ylim(bottom=0)
         _salvar(fig, ax, destino / "memoria.png")
+
+        fig, ax = _figura("Espera por I/O × demanda", "CPU parada esperando I/O (%)", taxas)
+        _series(ax, resumo, "wa", cores)
+        ax.set_ylim(bottom=0)
+        _salvar(fig, ax, destino / "io_wait.png")
+
+        fig, ax = _figura("Escrita no disco × demanda", "Escrita no disco (KiB/s)", taxas)
+        _series(ax, resumo, "bo", cores)
+        ax.set_ylim(bottom=0)
+        _salvar(fig, ax, destino / "disco_escrita.png")
 
     fig, ax = _figura("Taxa de erro × demanda", "Erros (% das requisições)", taxas)
     _series(ax, resumo, "erros_pct", cores)

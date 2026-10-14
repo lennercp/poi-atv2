@@ -110,5 +110,6 @@ def parse(texto, mem_total_mb):
             "us": d["us"], "sy": d["sy"], "wa": d["wa"], "st": d.get("st", 0),
             "mem_usada_mb": mem_total_mb - (d["free"] + d["buff"] + d["cache"]) / 1024,
             "si": d["si"], "so": d["so"],  # KiB/s
+            "bi": d["bi"], "bo": d["bo"],  # KiB/s lidos/gravados no disco (blocos de 1 KiB)
         })
     return amostras

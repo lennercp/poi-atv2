@@ -36,6 +36,6 @@ No final:
 ```
 
 Saída em `results/report/`: `resumo.csv`, `tabela.md` e os gráficos `vazao.png`,
-`latencia_p95.png`, `cpu.png`, `memoria.png`, `erros.png` e `memoria_detalhada.png` (um painel por cenário: heap + fora do heap empilhados e a
+`latencia_p95.png`, `cpu.png`, `memoria.png`, `io_wait.png`, `disco_escrita.png`, `erros.png` e `memoria_detalhada.png` (um painel por cenário: heap + fora do heap empilhados e a
 memória usada da VM). Cada execução também tem um
 `results/<cenario>/r<taxa>_rep<n>.plot.html` (latência ao longo do tempo, gerado pelo `vegeta plot`).
