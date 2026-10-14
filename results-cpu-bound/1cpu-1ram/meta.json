@@ -1,0 +1,35 @@
+{
+  "cenario": "1cpu-1ram",
+  "inicio": "2026-10-14T15:22:23",
+  "config": {
+    "saida": "results-cpu-bound",
+    "alvo": {
+      "url": "http://localhost:8083/api/primes?limit=200000",
+      "method": "GET"
+    },
+    "carga": {
+      "taxas": [
+        1,
+        5,
+        10,
+        20,
+        30,
+        40,
+        50,
+        75,
+        100
+      ],
+      "duracao": "20s",
+      "aquecimento": "0s",
+      "repeticoes": 1,
+      "timeout": "10s",
+      "pausa": "20s"
+    },
+    "vm": {
+      "ssh": "osboxes@localhost",
+      "porta": 2222
+    }
+  },
+  "nproc": 1,
+  "mem_total_mb": 971
+}

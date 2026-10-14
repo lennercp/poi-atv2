@@ -1,0 +1,18 @@
+# Configuração do experimento da aplicação CPU-bound (contagem de primos). Mesmos parâmetros de carga do experimento.yaml.
+saida: results-cpu-bound     # diretório raiz dos resultados
+
+alvo:                        # requisição enviada pelo vegeta
+  url: http://localhost:8083/api/primes?limit=200000   # porta do host no redirecionamento do VirtualBox; ~27 ms de CPU por requisição
+  method: GET
+
+carga:
+  taxas: [1, 5, 10, 20, 30, 40, 50, 75, 100]   # req/s, iguais para todos os cenários
+  duracao: 20s               # medição de cada execução
+  aquecimento: 0s             # descartado; 0s pula o aquecimento
+  repeticoes: 1
+  timeout: 10s               # por requisição
+  pausa: 20s                  # entre execuções
+
+vm:                          # de onde ler nproc/memória/vmstat
+  ssh: osboxes@localhost     # "local" = esta máquina (sem SSH)
+  porta: 2222
