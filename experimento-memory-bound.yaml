@@ -5,6 +5,7 @@ alvo:                        # requisição enviada pelo vegeta
   url: http://localhost:8081/api/imagens/processar   # porta do host no redirecionamento do VirtualBox
   method: POST
   # body: '{"x": 1}'         # opcional; enviado com Content-Type: application/json
+  # body_arquivo: corpo.json # opcional; como body, mas lido de um arquivo (relativo ao diretório onde o bench roda)
   multipart:                 # opcional (não use junto com body); enviado como multipart/form-data
     arquivos:                # campo: caminho do arquivo (relativo ao diretório onde o bench roda)
       file: img1000.jpg

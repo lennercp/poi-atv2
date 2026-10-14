@@ -62,10 +62,13 @@ def corpo_multipart(multipart):
 def escrever_alvo(alvo, arquivo):
     """Grava o alvo no formato de alvos JSON do vegeta (-format=json)."""
     target = {"method": alvo.get("method", "GET"), "url": alvo["url"]}
-    if alvo.get("body") is not None and alvo.get("multipart") is not None:
-        raise ValueError("alvo: use body ou multipart, não os dois")
+    if sum(alvo.get(k) is not None for k in ("body", "body_arquivo", "multipart")) > 1:
+        raise ValueError("alvo: use só um de body, body_arquivo ou multipart")
     if alvo.get("body") is not None:
         target["body"] = base64.b64encode(str(alvo["body"]).encode()).decode()
+        target["header"] = {"Content-Type": ["application/json"]}
+    if alvo.get("body_arquivo") is not None:
+        target["body"] = base64.b64encode(Path(alvo["body_arquivo"]).read_bytes()).decode()
         target["header"] = {"Content-Type": ["application/json"]}
     if alvo.get("multipart") is not None:
         corpo, tipo = corpo_multipart(alvo["multipart"])
@@ -145,12 +148,12 @@ def main():
 
     p_run = sub.add_parser("run", help="executa todas as taxas × repetições de um cenário")
     p_run.add_argument("--cenario", required=True, help="rótulo do cenário, ex.: c1")
-    p_run.add_argument("--config", default="experimento.yaml")
+    p_run.add_argument("--config", default="experimento-memory-bound.yaml")
     p_run.add_argument("--no-vm-metrics", action="store_true", help="não coleta CPU/memória da VM")
     p_run.set_defaults(func=cmd_run)
 
     p_rep = sub.add_parser("report", help="consolida todos os cenários em CSV, tabela, conclusões e gráficos")
-    p_rep.add_argument("--config", default="experimento.yaml")
+    p_rep.add_argument("--config", default="experimento-memory-bound.yaml")
     p_rep.set_defaults(func=cmd_report)
 
     args = ap.parse_args()

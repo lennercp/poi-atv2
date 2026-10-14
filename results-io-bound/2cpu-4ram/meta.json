@@ -1,0 +1,36 @@
+{
+  "cenario": "2cpu-4ram",
+  "inicio": "2026-10-14T17:33:04",
+  "config": {
+    "saida": "results-io-bound",
+    "alvo": {
+      "url": "http://localhost:8082/files",
+      "method": "POST",
+      "body_arquivo": "body256k.json"
+    },
+    "carga": {
+      "taxas": [
+        1,
+        5,
+        10,
+        20,
+        30,
+        40,
+        50,
+        75,
+        100
+      ],
+      "duracao": "20s",
+      "aquecimento": "0s",
+      "repeticoes": 1,
+      "timeout": "10s",
+      "pausa": "20s"
+    },
+    "vm": {
+      "ssh": "osboxes@localhost",
+      "porta": 2222
+    }
+  },
+  "nproc": 2,
+  "mem_total_mb": 3926
+}
