@@ -1,7 +1,7 @@
 """Harness de teste de carga da Atividade 2.
 
-  python bench/bench.py run    --cenario c1 [--config experimento.yaml] [--no-vm-metrics]
-  python bench/bench.py report              [--config experimento.yaml]
+  python bench/bench.py run    --cenario 1cpu-1ram [--config experimento-memory-bound.yaml] [--no-vm-metrics]
+  python bench/bench.py report                    [--config experimento-memory-bound.yaml]
 """
 import argparse
 import base64
@@ -86,13 +86,11 @@ def atacar(alvo, taxa, duracao, timeout, saida):
     )
 
 
-def gerar_relatorios(pasta, nome, titulo):
-    """Gera o JSON de estatísticas e o plot HTML a partir do .bin de uma execução."""
+def gerar_relatorios(pasta, nome):
+    """Gera o JSON de estatísticas a partir do .bin de uma execução."""
     binario = pasta / f"{nome}.bin"
     estatisticas = pasta / f"{nome}.json"
     subprocess.run(["vegeta", "report", "-type=json", f"-output={estatisticas}", str(binario)], check=True)
-    subprocess.run(["vegeta", "plot", f"-title={titulo}", f"-output={pasta / f'{nome}.plot.html'}", str(binario)],
-                   check=True)
     return json.loads(estatisticas.read_text())
 
 
@@ -131,7 +129,7 @@ def cmd_run(args):
                     coletor.parar()  # Ctrl+C: não deixa vmstat/ssh órfão
                 if jvm:
                     jvm.parar()
-            r = gerar_relatorios(pasta, nome, f"{args.cenario} — {taxa} req/s (rep {rep})")
+            r = gerar_relatorios(pasta, nome)
             print(f"[{args.cenario}] {taxa:>5} req/s  rep {rep}/{carga['repeticoes']}  "
                   f"p95 = {r['latencies']['95th'] / 1e6:8.1f} ms  sucesso = {r['success'] * 100:5.1f}%",
                   flush=True)
@@ -147,7 +145,7 @@ def main():
     sub = ap.add_subparsers(dest="comando", required=True)
 
     p_run = sub.add_parser("run", help="executa todas as taxas × repetições de um cenário")
-    p_run.add_argument("--cenario", required=True, help="rótulo do cenário, ex.: c1")
+    p_run.add_argument("--cenario", required=True, help="rótulo do cenário, ex.: 1cpu-1ram")
     p_run.add_argument("--config", default="experimento-memory-bound.yaml")
     p_run.add_argument("--no-vm-metrics", action="store_true", help="não coleta CPU/memória da VM")
     p_run.set_defaults(func=cmd_run)

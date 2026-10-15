@@ -1,5 +1,5 @@
 # Configuração oficial do experimento. Todos os cenários rodam com estes mesmos parâmetros.
-saida: results               # diretório raiz dos resultados
+saida: results-memory-bound  # diretório raiz dos resultados
 
 alvo:                        # requisição enviada pelo vegeta
   url: http://localhost:8081/api/imagens/processar   # porta do host no redirecionamento do VirtualBox
