@@ -2,3 +2,4 @@
 __pycache__/
 *.bin
 results-e2e/
+minha-chave.pem
