@@ -1,0 +1,22 @@
+services:
+  cpu-bound:
+    image: beatrizsm3/cpu-bound:1.0.0
+    build: ./cpu-bound
+    container_name: cpu-bound
+    restart: unless-stopped
+    env_file: ./cpu-bound/config/app.env
+    ports:
+      - "8081:8080"
+
+  io-bound:
+    image: lennercp/io-bound:1.0.0
+    build: ./io-bound
+    container_name: io-bound
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - io-bound-data:/app/data
+
+volumes:
+  io-bound-data:

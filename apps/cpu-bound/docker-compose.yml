@@ -1,9 +1,0 @@
-services:
-  cpu-bound:
-    image: beatrizsm3/cpu-bound:1.0.0
-    build: .
-    container_name: cpu-bound
-    restart: unless-stopped
-    env_file: config/app.env
-    ports:
-      - "8080:8080"
