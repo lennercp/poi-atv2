@@ -18,5 +18,13 @@ services:
     volumes:
       - io-bound-data:/app/data
 
+  memory-bound:
+    image: pittersss/memory-bound:1.0.0
+    build: ./memory-bound
+    container_name: memory-bound
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+
 volumes:
   io-bound-data:
